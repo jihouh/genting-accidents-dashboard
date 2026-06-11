@@ -742,12 +742,18 @@ const map = L.map('map', {
   scrollWheelZoom: true
 });
 
-// Dark map tiles from CartoDB
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+// Dark map tiles from CartoDB — corrected URL (no {r} suffix, explicit subdomains array)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-  subdomains: 'abcd',
+  subdomains: ['a','b','c','d'],
   maxZoom: 19
 }).addTo(map);
+
+// Fix: force Leaflet to recalculate container size after page fully renders
+// This resolves blank map on GitHub Pages and other hosted environments
+setTimeout(function() { map.invalidateSize(); }, 300);
+window.addEventListener('load', function() { map.invalidateSize(); });
+window.addEventListener('resize', function() { map.invalidateSize(); });
 
 // Accident data
 const accidents = [
