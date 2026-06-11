@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Genting Highlands — Traffic Accident Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root {
     --bg: #0a0c0f;
@@ -531,23 +529,275 @@
 
   </div>
 
-  <!-- MAP SECTION -->
+  <!-- MAP SECTION — Static SVG, zero dependencies -->
   <div class="table-section">
     <div class="section-heading">Accident Location Map — Jalan Genting Highlands</div>
     <div class="panel" style="padding:0;overflow:hidden;">
-      <!-- Map legend bar -->
-      <div style="padding:16px 20px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface2);">
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-right:4px;">Legend:</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:14px;background:#e8392a;border-radius:50%;display:inline-block;box-shadow:0 0 6px #e8392a88;"></span>Fatal</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:14px;background:#f5a623;border-radius:50%;display:inline-block;"></span>Injuries</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:14px;background:#27ae60;border-radius:50%;display:inline-block;"></span>No casualties</span>
-        <span style="margin-left:auto;display:flex;gap:16px;">
-          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">⬇️ Descending</span>
-          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">⬆️ Ascending</span>
-          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">🅿️ Stationary</span>
-        </span>
+
+      <!-- Legend bar -->
+      <div style="padding:14px 20px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface2);">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;">Legend:</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:13px;height:13px;background:#e8392a;border-radius:50%;display:inline-block;box-shadow:0 0 6px #e8392a99;"></span>Fatal</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:13px;height:13px;background:#f5a623;border-radius:50%;display:inline-block;"></span>Injuries</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:13px;height:13px;background:#27ae60;border-radius:50%;display:inline-block;"></span>No casualties</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#9ca3af;">— — Main route</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#f5a623;">— — Alt route (Jln Genting Permai)</span>
+        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);">Hover pins for details</span>
       </div>
-      <div id="map" style="height:520px;width:100%;"></div>
+
+      <!-- SVG Static Map -->
+      <div style="position:relative;background:#1a1f2b;overflow:hidden;" id="svgMapWrap">
+        <svg id="staticMap" viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg"
+             style="width:100%;display:block;font-family:'DM Sans',sans-serif;">
+          <defs>
+            <filter id="pinShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.6)"/>
+            </filter>
+            <filter id="glowRed">
+              <feGaussianBlur stdDeviation="4" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#2a9fd6" opacity="0.7"/>
+            </marker>
+            <marker id="arrowOrange" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#f5a623" opacity="0.6"/>
+            </marker>
+          </defs>
+
+          <!-- ── BACKGROUND: terrain-style painted map ── -->
+          <!-- Sky/base -->
+          <rect width="900" height="540" fill="#1a2035"/>
+
+          <!-- Forest/terrain areas -->
+          <ellipse cx="150" cy="100" rx="180" ry="120" fill="#1a2d1a" opacity="0.7"/>
+          <ellipse cx="780" cy="80" rx="200" ry="130" fill="#1a2d1a" opacity="0.6"/>
+          <ellipse cx="500" cy="60" rx="250" ry="100" fill="#1c2e1c" opacity="0.5"/>
+          <ellipse cx="100" cy="400" rx="160" ry="100" fill="#1a2d1a" opacity="0.5"/>
+          <ellipse cx="820" cy="420" rx="140" ry="100" fill="#1a2d1a" opacity="0.4"/>
+          <ellipse cx="450" cy="480" rx="300" ry="100" fill="#1a2d1a" opacity="0.4"/>
+
+          <!-- Elevation contour lines (lighter) -->
+          <path d="M50,320 Q200,280 350,300 Q500,320 650,290 Q750,270 880,300" fill="none" stroke="#2a3a2a" stroke-width="1" opacity="0.5"/>
+          <path d="M50,370 Q200,340 380,355 Q520,370 680,340 Q780,320 880,350" fill="none" stroke="#2a3a2a" stroke-width="1" opacity="0.4"/>
+          <path d="M50,250 Q180,220 320,240 Q470,260 620,230 Q730,210 880,240" fill="none" stroke="#263626" stroke-width="1" opacity="0.4"/>
+
+          <!-- River/stream decorative -->
+          <path d="M680,10 Q700,80 690,140 Q675,200 695,260" fill="none" stroke="#1e3a4a" stroke-width="3" opacity="0.5"/>
+
+          <!-- ── ROADS ── -->
+          <!-- Road glow/casing - main Jalan Genting Highlands -->
+          <path d="M170,490 Q200,440 230,400 Q265,355 290,320 Q315,285 335,255 Q355,225 375,198 Q395,172 415,150 Q440,125 465,105 Q490,85 510,70 Q535,55 560,45 Q580,38 600,35"
+                fill="none" stroke="#0a3a5a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+          <!-- Main road surface -->
+          <path d="M170,490 Q200,440 230,400 Q265,355 290,320 Q315,285 335,255 Q355,225 375,198 Q395,172 415,150 Q440,125 465,105 Q490,85 510,70 Q535,55 560,45 Q580,38 600,35"
+                fill="none" stroke="#3a5a7a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"
+                stroke-dasharray="none" marker-end="url(#arrowBlue)"/>
+          <!-- Road center line -->
+          <path d="M170,490 Q200,440 230,400 Q265,355 290,320 Q315,285 335,255 Q355,225 375,198 Q395,172 415,150 Q440,125 465,105 Q490,85 510,70 Q535,55 560,45 Q580,38 600,35"
+                fill="none" stroke="#5a8aaa" stroke-width="1.5" stroke-dasharray="8 6" opacity="0.5"/>
+
+          <!-- Jalan Genting Permai (alternate route) -->
+          <path d="M250,420 Q280,390 310,365 Q340,340 370,318 Q395,300 415,283 Q435,265 452,248 Q465,235 475,218 Q488,200 498,183 Q510,162 522,142 Q535,120 548,102 Q560,85 572,72 Q582,60 592,50"
+                fill="none" stroke="#4a3a0a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+          <path d="M250,420 Q280,390 310,365 Q340,340 370,318 Q395,300 415,283 Q435,265 452,248 Q465,235 475,218 Q488,200 498,183 Q510,162 522,142 Q535,120 548,102 Q560,85 572,72 Q582,60 592,50"
+                fill="none" stroke="#f5a623" stroke-width="2" stroke-dasharray="7 5" opacity="0.55" marker-end="url(#arrowOrange)"/>
+
+          <!-- Secondary roads -->
+          <path d="M600,35 Q640,30 680,28 Q720,26 760,30" fill="none" stroke="#2a4a6a" stroke-width="4" opacity="0.5"/>
+          <path d="M170,490 Q140,500 110,505 Q80,508 50,510" fill="none" stroke="#2a4a6a" stroke-width="4" opacity="0.5"/>
+
+          <!-- ── DIRECTION LABELS ── -->
+          <!-- Summit label top -->
+          <rect x="598" y="16" width="148" height="22" rx="3" fill="#0d1a2e" opacity="0.9"/>
+          <text x="672" y="31" text-anchor="middle" font-size="10" fill="#2a9fd6" font-family="'DM Mono',monospace" letter-spacing="0.1em">🏔 GENTING SUMMIT ↑</text>
+
+          <!-- Base label bottom -->
+          <rect x="60" y="490" width="140" height="22" rx="3" fill="#0d1a2e" opacity="0.9"/>
+          <text x="130" y="505" text-anchor="middle" font-size="10" fill="#6b7280" font-family="'DM Mono',monospace" letter-spacing="0.08em">↓ KL / GOMBAK BASE</text>
+
+          <!-- Route label -->
+          <text x="350" y="390" font-size="9" fill="#5a8aaa" font-family="'DM Mono',monospace" opacity="0.8" transform="rotate(-52, 350, 390)">JALAN GENTING HIGHLANDS</text>
+          <text x="460" y="305" font-size="8" fill="#c8820a" font-family="'DM Mono',monospace" opacity="0.7" transform="rotate(-52, 460, 305)">JLN GENTING PERMAI</text>
+
+          <!-- KM markers on road -->
+          <circle cx="215" cy="455" r="3" fill="#5a8aaa" opacity="0.5"/>
+          <text x="220" y="451" font-size="8" fill="#5a8aaa" opacity="0.6" font-family="'DM Mono',monospace">KM16.5</text>
+          <circle cx="280" cy="388" r="3" fill="#5a8aaa" opacity="0.5"/>
+          <text x="286" y="384" font-size="8" fill="#5a8aaa" opacity="0.6" font-family="'DM Mono',monospace">KM14.7</text>
+          <circle cx="332" cy="330" r="3" fill="#5a8aaa" opacity="0.5"/>
+          <text x="338" y="326" font-size="8" fill="#5a8aaa" opacity="0.6" font-family="'DM Mono',monospace">KM13.4</text>
+          <circle cx="368" cy="278" r="3" fill="#5a8aaa" opacity="0.5"/>
+          <text x="374" y="274" font-size="8" fill="#5a8aaa" opacity="0.6" font-family="'DM Mono',monospace">KM12</text>
+
+          <!-- North arrow -->
+          <g transform="translate(848,50)">
+            <circle cx="0" cy="0" r="22" fill="#0d1a2e" stroke="#2a3a5a" stroke-width="1"/>
+            <path d="M0,-14 L4,6 L0,2 L-4,6 Z" fill="#e8eaf0"/>
+            <path d="M0,14 L4,-6 L0,-2 L-4,-6 Z" fill="#3a5a7a"/>
+            <text x="0" y="-17" text-anchor="middle" font-size="9" fill="#e8eaf0" font-family="'DM Mono',monospace">N</text>
+          </g>
+
+          <!-- Scale bar -->
+          <g transform="translate(730,510)">
+            <line x1="0" y1="0" x2="80" y2="0" stroke="#6b7280" stroke-width="1.5"/>
+            <line x1="0" y1="-4" x2="0" y2="4" stroke="#6b7280" stroke-width="1.5"/>
+            <line x1="80" y1="-4" x2="80" y2="4" stroke="#6b7280" stroke-width="1.5"/>
+            <text x="40" y="-6" text-anchor="middle" font-size="9" fill="#6b7280" font-family="'DM Mono',monospace">~2 km</text>
+          </g>
+
+          <!-- ══════════════════════════════════ -->
+          <!-- ACCIDENT PINS — hover for tooltip  -->
+          <!-- ══════════════════════════════════ -->
+
+          <!-- ① KM16.5 — FATAL — Jun 29 2024 — DESCENDING -->
+          <g class="pin-group" id="pin1">
+            <!-- Pulse ring -->
+            <circle cx="218" cy="450" r="20" fill="#e8392a" opacity="0.12" class="pulse-ring"/>
+            <circle cx="218" cy="450" r="14" fill="#e8392a" opacity="0.18" class="pulse-ring2"/>
+            <!-- Pin body -->
+            <circle cx="218" cy="450" r="11" fill="#e8392a" stroke="#fff" stroke-width="2" filter="url(#glowRed)"/>
+            <text x="218" y="455" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">1</text>
+            <!-- Direction arrow: descending = pointing down-left along road -->
+            <path d="M218,462 L210,474" stroke="#e8392a" stroke-width="2" marker-end="url(#arrowDown)" opacity="0.9"/>
+            <text x="218" y="480" text-anchor="middle" font-size="9" fill="#e8392a" font-family="'DM Mono',monospace" opacity="0.9">⬇ DESC</text>
+            <!-- Tooltip -->
+            <g class="tooltip" visibility="hidden">
+              <rect x="238" y="400" width="240" height="130" rx="4" fill="#0d1520" stroke="#e8392a" stroke-width="1.5" opacity="0.97"/>
+              <rect x="238" y="400" width="240" height="22" rx="4" fill="#e8392a"/>
+              <text x="249" y="415" font-size="10" font-weight="700" fill="#fff">① Jun 29, 2024  ~11:00 AM</text>
+              <text x="249" y="436" font-size="10" fill="#f5a623" font-weight="600">💀 FATAL — 2 killed, 19 survived</text>
+              <text x="249" y="452" font-size="9.5" fill="#e8eaf0">🚌 Tour Bus — M. Kumar Trans Tour</text>
+              <text x="249" y="467" font-size="9.5" fill="#e8eaf0">⬇️ Descending → KL / Gombak</text>
+              <text x="249" y="482" font-size="9" fill="#9ca3af">KM16.5 · No valid licence · 27 summons</text>
+              <text x="249" y="496" font-size="9" fill="#9ca3af">Charged at Bentong Magistrate's Court</text>
+              <text x="249" y="510" font-size="9" fill="#9ca3af">Skidded, hit road divider</text>
+            </g>
+          </g>
+
+          <!-- ② KM14.7 — NO CASUALTY — Feb 23 2025 — ASCENDING -->
+          <g class="pin-group" id="pin2">
+            <circle cx="282" cy="384" r="11" fill="#27ae60" stroke="#fff" stroke-width="2" filter="url(#pinShadow)"/>
+            <text x="282" y="389" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">2</text>
+            <text x="282" y="373" text-anchor="middle" font-size="9" fill="#27ae60" font-family="'DM Mono',monospace" opacity="0.9">⬆ ASC</text>
+            <g class="tooltip" visibility="hidden">
+              <rect x="302" y="320" width="230" height="120" rx="4" fill="#0d1520" stroke="#27ae60" stroke-width="1.5" opacity="0.97"/>
+              <rect x="302" y="320" width="230" height="22" rx="4" fill="#27ae60"/>
+              <text x="313" y="335" font-size="10" font-weight="700" fill="#fff">② Feb 23, 2025  ~11:05 AM</text>
+              <text x="313" y="355" font-size="10" fill="#27ae60" font-weight="600">✅ No injuries</text>
+              <text x="313" y="371" font-size="9.5" fill="#e8eaf0">🚗 Private Car — Honda CR-Z</text>
+              <text x="313" y="387" font-size="9.5" fill="#e8eaf0">⬆️ Ascending → Genting</text>
+              <text x="313" y="402" font-size="9" fill="#9ca3af">KM14.7 · Reckless driving, viral TikTok</text>
+              <text x="313" y="416" font-size="9" fill="#9ca3af">Sec 42(1) Road Transport Act</text>
+            </g>
+          </g>
+
+          <!-- ③ Jalan Genting Permai — INJURY — Jun 8 2025 — ASCENDING -->
+          <g class="pin-group" id="pin3">
+            <circle cx="452" cy="248" r="11" fill="#f5a623" stroke="#fff" stroke-width="2" filter="url(#pinShadow)"/>
+            <text x="452" y="253" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">3</text>
+            <text x="452" y="237" text-anchor="middle" font-size="9" fill="#f5a623" font-family="'DM Mono',monospace" opacity="0.9">⬆ ASC</text>
+            <g class="tooltip" visibility="hidden">
+              <rect x="472" y="185" width="250" height="128" rx="4" fill="#0d1520" stroke="#f5a623" stroke-width="1.5" opacity="0.97"/>
+              <rect x="472" y="185" width="250" height="22" rx="4" fill="#f5a623"/>
+              <text x="483" y="200" font-size="10" font-weight="700" fill="#fff">③ Jun 8, 2025  4:50 PM</text>
+              <text x="483" y="221" font-size="10" fill="#f5a623" font-weight="600">🟠 4 Singaporeans injured</text>
+              <text x="483" y="237" font-size="9.5" fill="#e8eaf0">🚗 Private Hire Car (Perodua Myvi)</text>
+              <text x="483" y="253" font-size="9.5" fill="#e8eaf0">⬆️ Ascending · Jln Genting Permai</text>
+              <text x="483" y="268" font-size="9" fill="#9ca3af">Hit by Toyota pickup, driver fled</text>
+              <text x="483" y="282" font-size="9" fill="#9ca3af">2 with neck/leg braces · Truck driver arrested</text>
+              <text x="483" y="296" font-size="9" fill="#9ca3af">Pahang section, Jln Genting Permai</text>
+            </g>
+          </g>
+
+          <!-- ④ KM12 — INJURY — Jun 22 2025 — DESCENDING -->
+          <g class="pin-group" id="pin4">
+            <circle cx="370" cy="276" r="11" fill="#f5a623" stroke="#fff" stroke-width="2" filter="url(#pinShadow)"/>
+            <text x="370" y="281" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">4</text>
+            <text x="370" y="295" text-anchor="middle" font-size="9" fill="#f5a623" font-family="'DM Mono',monospace" opacity="0.9">⬇ DESC</text>
+            <g class="tooltip" visibility="hidden">
+              <rect x="390" y="210" width="240" height="126" rx="4" fill="#0d1520" stroke="#f5a623" stroke-width="1.5" opacity="0.97"/>
+              <rect x="390" y="210" width="240" height="22" rx="4" fill="#f5a623"/>
+              <text x="401" y="225" font-size="10" font-weight="700" fill="#fff">④ Jun 22, 2025  7:45 PM</text>
+              <text x="401" y="246" font-size="10" fill="#f5a623" font-weight="600">🟠 3 minor injuries</text>
+              <text x="401" y="262" font-size="9.5" fill="#e8eaf0">🚌 Tour Bus — 25 passengers</text>
+              <text x="401" y="278" font-size="9.5" fill="#e8eaf0">⬇️ Descending → Serdang</text>
+              <text x="401" y="293" font-size="9" fill="#9ca3af">KM12 · Lost control at bend</text>
+              <text x="401" y="307" font-size="9" fill="#9ca3af">Driver 54M, female 74yo &amp; 75yo injured</text>
+              <text x="401" y="320" font-size="9" fill="#9ca3af">Hit roadside barrier</text>
+            </g>
+          </g>
+
+          <!-- ⑤ Mushroom Farm — NO CASUALTY — Jul 2 2025 — STATIONARY -->
+          <g class="pin-group" id="pin5">
+            <circle cx="505" cy="150" r="11" fill="#27ae60" stroke="#fff" stroke-width="2" filter="url(#pinShadow)"/>
+            <text x="505" y="155" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">5</text>
+            <text x="505" y="140" text-anchor="middle" font-size="9" fill="#27ae60" font-family="'DM Mono',monospace" opacity="0.9">🅿 STAT</text>
+            <g class="tooltip" visibility="hidden">
+              <rect x="525" y="88" width="248" height="122" rx="4" fill="#0d1520" stroke="#27ae60" stroke-width="1.5" opacity="0.97"/>
+              <rect x="525" y="88" width="248" height="22" rx="4" fill="#27ae60"/>
+              <text x="536" y="103" font-size="10" font-weight="700" fill="#fff">⑤ Jul 2, 2025  12:20 PM</text>
+              <text x="536" y="124" font-size="10" fill="#27ae60" font-weight="600">✅ No injuries — property damage</text>
+              <text x="536" y="140" font-size="9.5" fill="#e8eaf0">🚌 Tour Bus — Mushroom Farm Carpark</text>
+              <text x="536" y="156" font-size="9.5" fill="#e8eaf0">🅿️ Stationary / Parked</text>
+              <text x="536" y="171" font-size="9" fill="#9ca3af">Bus lurched forward, hit pillar</text>
+              <text x="536" y="185" font-size="9" fill="#9ca3af">Pillar collapsed onto taxi · Sec 43 RTA</text>
+            </g>
+          </g>
+
+          <!-- ⑥ Descent area — NO CASUALTY — Aug 10 2025 — DESCENDING -->
+          <g class="pin-group" id="pin6">
+            <circle cx="468" cy="192" r="11" fill="#27ae60" stroke="#fff" stroke-width="2" filter="url(#pinShadow)"/>
+            <text x="468" y="197" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">6</text>
+            <text x="468" y="211" text-anchor="middle" font-size="9" fill="#27ae60" font-family="'DM Mono',monospace" opacity="0.9">⬇ DESC</text>
+            <g class="tooltip" visibility="hidden">
+              <rect x="190" y="135" width="252" height="122" rx="4" fill="#0d1520" stroke="#27ae60" stroke-width="1.5" opacity="0.97"/>
+              <rect x="190" y="135" width="252" height="22" rx="4" fill="#27ae60"/>
+              <text x="201" y="150" font-size="10" font-weight="700" fill="#fff">⑥ Aug 10, 2025  Afternoon</text>
+              <text x="201" y="171" font-size="10" fill="#27ae60" font-weight="600">✅ No serious injuries</text>
+              <text x="201" y="187" font-size="9.5" fill="#e8eaf0">🚌 Tour Bus — Vietnamese tourists</text>
+              <text x="201" y="203" font-size="9.5" fill="#e8eaf0">⬇️ Descending → Batu Caves, Gombak</text>
+              <text x="201" y="218" font-size="9" fill="#9ca3af">Collided with Perodua Myvi + Toyota Innova</text>
+              <text x="201" y="232" font-size="9" fill="#9ca3af">Vietnamese Embassy monitored situation</text>
+            </g>
+          </g>
+
+          <!-- ⑦ KM13.4 — NO CASUALTY — Oct 5 2025 — ASCENDING -->
+          <g class="pin-group" id="pin7">
+            <circle cx="334" cy="326" r="11" fill="#27ae60" stroke="#fff" stroke-width="2" filter="url(#pinShadow)"/>
+            <text x="334" y="331" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">7</text>
+            <text x="334" y="315" text-anchor="middle" font-size="9" fill="#27ae60" font-family="'DM Mono',monospace" opacity="0.9">⬆ ASC</text>
+            <g class="tooltip" visibility="hidden">
+              <rect x="354" y="263" width="235" height="120" rx="4" fill="#0d1520" stroke="#27ae60" stroke-width="1.5" opacity="0.97"/>
+              <rect x="354" y="263" width="235" height="22" rx="4" fill="#27ae60"/>
+              <text x="365" y="278" font-size="10" font-weight="700" fill="#fff">⑦ Oct 5, 2025  12:30 AM</text>
+              <text x="365" y="299" font-size="10" fill="#27ae60" font-weight="600">✅ No injuries — car damaged</text>
+              <text x="365" y="315" font-size="9.5" fill="#e8eaf0">🚗 Private Car (driver 24M)</text>
+              <text x="365" y="331" font-size="9.5" fill="#e8eaf0">⬆️ Ascending → Genting</text>
+              <text x="365" y="346" font-size="9" fill="#9ca3af">KM13.4 · Lost control, hit divider</text>
+              <text x="365" y="360" font-size="9" fill="#9ca3af">Road Traffic Rules 1959 · 12:30 AM</text>
+            </g>
+          </g>
+
+          <!-- OSM attribution -->
+          <text x="890" y="534" text-anchor="end" font-size="8" fill="#4a5568" font-family="monospace">© OpenStreetMap contributors</text>
+        </svg>
+
+        <style>
+          .pin-group { cursor: pointer; }
+          .pin-group:hover .tooltip { visibility: visible !important; }
+          @keyframes pulse-anim {
+            0%, 100% { opacity: 0.12; r: 20px; }
+            50% { opacity: 0.25; r: 26px; }
+          }
+          @keyframes pulse-anim2 {
+            0%, 100% { opacity: 0.18; r: 14px; }
+            50% { opacity: 0.3; r: 18px; }
+          }
+          .pulse-ring { animation: pulse-anim 2.5s infinite ease-in-out; }
+          .pulse-ring2 { animation: pulse-anim2 2.5s infinite ease-in-out 0.4s; }
+        </style>
+      </div>
     </div>
   </div>
 
@@ -734,7 +984,9 @@
 </div>
 
 <script>
-// Initialize Leaflet map with dark tiles
+// legacy script removed — map is now static SVG
+void(0);
+/*
 const map = L.map('map', {
   center: [3.392, 101.779],
   zoom: 14,
@@ -1008,6 +1260,7 @@ style.textContent = `
   .leaflet-control-attribution { font-size: 9px !important; }
 `;
 document.head.appendChild(style);
+*/
 </script>
 </body>
 </html>
